@@ -2,9 +2,9 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 const dbPath = process.env.RENDER_EXTERNAL_HOSTNAME
-  ? path.join('/data', 'league_senior.db')
+  ? path.join('/data', 'league_ejecutivo.db')
   : (process.env.RAILWAY_VOLUME_MOUNT_PATH
-    ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'league_senior.db')
+    ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'league_ejecutivo.db')
     : path.resolve(__dirname, 'league.db'));
 
 const db = new sqlite3.Database(dbPath, (err) => {
@@ -67,7 +67,7 @@ function initDb() {
     )`);
 
     // Insertar configuración por defecto si no existe
-    db.run(`INSERT OR IGNORE INTO settings (id, league_name) VALUES (1, 'AFEMEC - SENIOR')`);
+    db.run(`INSERT OR IGNORE INTO settings (id, league_name) VALUES (1, 'AFEMEC - EJECUTIVO')`);
   });
 }
 

@@ -5,7 +5,7 @@ const { db, initDb } = require('./database');
 const os = require('os');
 
 const app = express();
-const PORT = 3000;
+const PORT = 3001;
 
 app.use(cors());
 app.use(bodyParser.json());
