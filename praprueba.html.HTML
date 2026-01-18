@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Liga de Fútbol Interactivo</title>
+
+  <!-- Librería externa para PDF (Opcional) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- Enlace a nuestro archivo de Estilos CSS -->
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!isLocal && sessionStorage.getItem('admin_access') !== 'true') {
+      const pass = prompt("Acceso restringido. Ingrese la contraseña de administrador:");
+      if (pass === 'afemec123') {
+        sessionStorage.setItem('admin_access', 'true');
+      } else {
+        alert("Contraseña incorrecta.");
+        window.location.href = "/";
+      }
+    }
+  </script>
+</head>
+
+<body>
+
+  <!-- ENCABEZADO Y CONFIGURACIÓN LIGA (Siempre visible) -->
+  <header style="padding: 20px;">
+    <h1 id="ligaTitle">Sistema de Liga de Fútbol</h1>
+    <form id="ligaNameForm" style="padding: 1em; background: #e8f5e9;">
+      <label for="ligaName">Nombre de la Liga:</label>
+      <input type="text" id="ligaName" placeholder="Ej: Torneo Verano 2024" maxlength="50" required>
+      <button type="submit">Cambiar Nombre</button>
+      <button type="button" class="pdf-btn" onclick="exportPDF()" style="float: right; margin-left: 10px;">📄 Exportar
+        PDF</button>
+      <button type="button" onclick="window.open('publico.html', '_blank')"
+        style="float: right; background-color: #2196F3; color: white; border:none; padding: 0.5em 1em; cursor:pointer; margin-left: 10px;">🌐
+        Ver Web Pública</button>
+      <button type="button" onclick="showQrModal()"
+        style="float: right; background-color: #673ab7; color: white; border:none; padding: 0.5em 1em; cursor:pointer;">📱
+        Conectar Celular</button>
+    </form>
+  </header>
+
+  <!-- SECCIÓN 1: GESTIÓN DE EQUIPOS -->
+  <section>
+    <h2>1. Registrar Equipo</h2>
+    <p>Agrega los equipos que participarán en el torneo.</p>
+
+    <form id="teamForm">
+      <div>
+        <label for="teamName">Nombre del Equipo:</label>
+        <input type="text" id="teamName" placeholder="Ej: Los Tigres FC" required>
+      </div>
+      <div>
+        <label for="teamLogo">URL del Escudo:</label>
+        <input type="url" id="teamLogo" placeholder="https://ejemplo.com/logo.png">
+        <small style="display:block; color:#666;">Puedes dejarlo vacío para usar uno por defecto.</small>
+      </div>
+      <button type="submit">➕ Agregar Equipo</button>
+    </form>
+
+    <table id="teamsTable">
+      <caption>Equipos Registrados</caption>
+      <thead>
+        <tr>
+          <th width="50">N°</th>
+          <th>Nombre</th>
+          <th>Escudo</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Las filas se insertan con JavaScript -->
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECCIÓN 2: GESTIÓN DE PARTIDOS -->
+  <section>
+    <h2>2. Registrar Partido</h2>
+    <p>Selecciona dos equipos y registra el resultado, goleadores y tarjetas.</p>
+
+    <form id="matchForm">
+      <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div>
+          <label for="matchA">Equipo Local (A):</label><br>
+          <select id="matchA" required>
+            <option value="">-- Selecciona --</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="matchB">Equipo Visitante (B):</label><br>
+          <select id="matchB" required>
+            <option value="">-- Selecciona --</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="matchDate">Fecha y Hora:</label><br>
+          <input type="datetime-local" id="matchDate" required>
+        </div>
+
+        <div style="width: 80px;">
+          <label for="matchDay">N° Fecha:</label><br>
+          <input type="number" id="matchDay" min="1" value="1" required style="width: 100%;">
+        </div>
+      </div>
+
+      <div style="margin-top: 15px;">
+        <label>Marcador Global:</label><br>
+        <input type="number" id="scoreA" min="0" value="0" style="width: 60px; text-align: center; font-size: 1.2em;"
+          readonly>
+        <span> - </span>
+        <input type="number" id="scoreB" min="0" value="0" style="width: 60px; text-align: center; font-size: 1.2em;"
+          readonly>
+        <small>(Se calcula automáticamente al agregar goles abajo)</small>
+      </div>
+
+      <br>
+
+      <!-- Contenedor Flex para las plantillas de los dos equipos -->
+      <div class="squad-container">
+        <div class="squad-box">
+          <h3>Plantilla Equipo A</h3>
+          <div id="squadAContainer">Selecciona un equipo primero...</div>
+        </div>
+
+        <div class="squad-box">
+          <h3>Plantilla Equipo B</h3>
+          <div id="squadBContainer">Selecciona un equipo primero...</div>
+        </div>
+      </div>
+
+      <br>
+      <button type="submit" style="width: 100%; padding: 15px; font-size: 1.1em;">✅ Finalizar y Guardar
+        Partido</button>
+    </form>
+
+    <table id="matchesTable">
+      <caption>Historial de Partidos</caption>
+      <thead>
+        <tr>
+          <th>Equipo A</th>
+          <th>Equipo B</th>
+          <th>Fecha</th>
+          <th>Resultado</th>
+          <th>Detalles (Goles)</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- JavaScript llenará esto -->
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECCIÓN 3: ESTADÍSTICAS DEL TORNEO -->
+  <section>
+    <h2>3. Tabla de Posiciones</h2>
+    <table id="standingsTable">
+      <thead>
+        <tr>
+          <th>Equipo</th>
+          <th title="Partidos Jugados">PJ</th>
+          <th title="Partidos Ganados">PG</th>
+          <th title="Partidos Empatados">PE</th>
+          <th title="Partidos Perdidos">PP</th>
+          <th title="Goles a Favor">GF</th>
+          <th title="Goles en Contra">GC</th>
+          <th title="Diferencia de Goles">DG</th>
+          <th title="Puntos">Pts</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- JavaScript llenará esto -->
+      </tbody>
+    </table>
+  </section>
+
+  <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+    <section style="flex: 1; min-width: 300px;">
+      <h2>Ranking de Goleadores</h2>
+      <table id="scorersTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th>Goles</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section style="flex: 1; min-width: 300px;">
+      <h2>Resumen de Tarjetas</h2>
+      <table id="cardsTable">
+        <thead>
+          <tr>
+            <th>Jugador</th>
+            <th>Equipo</th>
+            <th>Amar. 🟨</th>
+            <th>Roj. 🟥</th>
+            <th width="100">Estado</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
+
+  <!-- SECCIÓN 4: LISTA DE JUGADORES -->
+  <section>
+    <h2>4. Listado General de Jugadores</h2>
+    <div id="allPlayersContainer">
+      <!-- Se llenará dinámicamente -->
+      <p>Cargando jugadores...</p>
+    </div>
+  </section>
+
+  <!-- MODAL PARA GESTIONAR JUGADORES -->
+  <div id="playerModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closePlayerModal()">&times;</span>
+      <h2 id="modalTeamName">Gestionar Jugadores</h2>
+
+      <form id="addPlayerForm"
+        style="display: grid; gap: 10px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+        <input type="hidden" id="modalTeamId">
+
+        <div style="grid-column: 1 / -1;">
+          <label for="playerName" style="display:block; margin-bottom:5px; font-weight:bold;">Nombre Completo:</label>
+          <input type="text" id="playerName" placeholder="Nombre del jugador" required
+            style="width: 100%; padding: 8px; box-sizing: border-box;">
+        </div>
+
+        <div>
+          <label for="playerCedula" style="display:block; margin-bottom:5px; font-weight:bold;">Cédula:</label>
+          <input type="text" id="playerCedula" placeholder="N° Cédula"
+            style="width: 100%; padding: 8px; box-sizing: border-box;">
+        </div>
+
+        <div>
+          <label for="playerDob" style="display:block; margin-bottom:5px; font-weight:bold;">Fecha Nacimiento:</label>
+          <input type="date" id="playerDob" style="width: 100%; padding: 8px; box-sizing: border-box;">
+        </div>
+
+        <div>
+          <label for="playerType" style="display:block; margin-bottom:5px; font-weight:bold;">Tipo de Jugador:</label>
+          <select id="playerType" style="width: 100%; padding: 8px; box-sizing: border-box;">
+            <option value="Socio">Socio</option>
+            <option value="Adherente">Adherente</option>
+            <option value="Conyuge">Cónyuge</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="playerJersey" style="display:block; margin-bottom:5px; font-weight:bold;">Camiseta:</label>
+          <input type="number" id="playerJersey" placeholder="N°"
+            style="width: 100%; padding: 8px; box-sizing: border-box;">
+        </div>
+
+        <button type="submit" class="save-btn" style="grid-column: 1 / -1; margin-top: 10px; padding: 10px;">Guardar
+          Jugador</button>
+      </form>
+
+      <h3>Lista de Jugadores</h3>
+      <ul id="playersList" class="player-list"></ul>
+    </div>
+  </div>
+
+  <!-- PLANTILLA OCULTA PARA REPORTE PDF -->
+  <div id="pdfReport" style="display: none;">
+    <div class="report-page">
+      <header class="report-header">
+        <div class="logo-area">
+          <!-- Logo Placeholder -->
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <h1 class="afemec-logo">A<span class="afemec-text">femec</span></h1>
+          </div>
+          <small class="association-text">ASOCIACIÓN DE FUNCIONARIOS EMPLEADOS DEL<br>MINISTERIO DE EDUCACIÓN Y
+            CIENCIAS</small>
+        </div>
+        <div class="header-info">
+          <p><strong>Personería Jurídica</strong><br>Reconocida por Decreto N° 6049<br>en fecha 31 de Julio de
+            1959<br>Fundada el 7-09-1957<br>14 de Mayo N° 971 e/ Manduvirá y Piribebuy<br>Asunción - Paraguay</p>
+        </div>
+      </header>
+      <div class="red-line"></div>
+
+      <div class="report-body">
+        <h2 class="report-title" id="reportTournamentName">TORNEO DE FUTBOL AFEMEC</h2>
+
+        <div class="report-subtitle-row">
+          <span id="reportSubtitle">INFORME GENERAL</span>
+        </div>
+
+        <!-- RESULTADOS (Si se requiere) -->
+        <div class="report-section" id="sectionMatches" style="display:none;">
+          <h3 class="section-title">RESULTADOS RECIENTES</h3>
+          <table class="report-table" id="reportMatches">
+            <thead>
+              <tr>
+                <th width="30%">EQUIPO LOCAL</th>
+                <th width="10%">GLS</th>
+                <th width="20%">VS</th>
+                <th width="30%">EQUIPO VISITA</th>
+                <th width="10%">GLS</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <!-- POSICIONES -->
+        <div class="report-section">
+          <h3 class="section-title">POSICIONES</h3>
+          <table class="report-table" id="reportStandings">
+            <thead>
+              <tr>
+                <th width="5%">POS</th>
+                <th width="35%">EQUIPO</th>
+                <th width="7%">PJ</th>
+                <th width="7%">PG</th>
+                <th width="7%">PE</th>
+                <th width="7%">PP</th>
+                <th width="7%">GF</th>
+                <th width="7%">GC</th>
+                <th width="8%">DG</th>
+                <th width="10%">PUNTOS</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="cards-container">
+          <!-- TARJETAS AMARILLAS -->
+          <div class="report-section half-width">
+            <h3 class="section-title">TARJETAS AMARILLAS</h3>
+            <table class="report-table" id="reportYellows">
+              <thead>
+                <tr>
+                  <th width="10%">NRO</th>
+                  <th width="45%">JUGADOR</th>
+                  <th width="45%">EQUIPO</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <!-- TARJETAS ROJAS -->
+          <div class="report-section half-width">
+            <h3 class="section-title">TARJETAS ROJAS</h3>
+            <table class="report-table" id="reportReds">
+              <thead>
+                <tr>
+                  <th width="10%">NRO</th>
+                  <th width="45%">JUGADOR</th>
+                  <th width="45%">EQUIPO</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- GOLEADORES DE LA JORNADA (Opcional/Simulado) -->
+        <div class="report-section">
+          <h3 class="section-title">GOLEADORES DE LA JORNADA</h3>
+          <table class="report-table" id="reportMatchdayScorers">
+            <thead>
+              <tr>
+                <th width="10%">NRO</th>
+                <th width="40%">JUGADORES</th>
+                <th width="40%">EQUIPOS</th>
+                <th width="10%">GOLES</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <!-- GOLEADORES TOTALES -->
+        <div class="report-section">
+          <h3 class="section-title">GOLEADORES DEL TORNEO</h3>
+          <table class="report-table" id="reportScorers">
+            <thead>
+              <tr>
+                <th width="10%">NRO</th>
+                <th width="40%">JUGADORES</th>
+                <th width="40%">EQUIPOS</th>
+                <th width="10%">GOLES</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <div class="report-footer">
+        <div class="red-line"></div>
+        <div class="footer-content">
+          <div class="footer-col">
+            <strong>Sede Administrativa</strong><br>
+            14 de Mayo N° 971<br>
+            e/ Manduvirá y Piribebuy<br>
+            Teléfonos: 491 241-3 / 496 729
+          </div>
+          <div class="footer-col">
+            <strong>Centro Educativo Infantil</strong><br>
+            N° 7.971 "KUNU'U RAITY"<br>
+            Manduvirá e/14 de Mayo y Alberdi<br>
+            Teléfono: 491 428
+          </div>
+          <div class="footer-col">
+            <strong>Sede Social</strong><br>
+            (Lambaré)<br>
+            Avda. Cacique Lambaré<br>
+            Teléfono: 900 195
+          </div>
+        </div>
+        <div class="footer-icons">
+          <span><i class="icon">👍</i> Afemec</span>
+          <span><i class="icon">📧</i> Secretaria de Deportes - Afemec</span>
+          <span><i class="icon">🏠</i> Centro Educativo Kunu'u Raity</span>
+          <span><i class="icon">🌐</i> www.afemec.org.py</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PARA QR -->
+  <div id="qrModal" class="modal">
+    <div class="modal-content" style="text-align: center; max-width: 400px;">
+      <span class="close" onclick="closeQrModal()">&times;</span>
+      <h2>📱 Conectar Celular</h2>
+      <p>Escanea este código para abrir el sistema en tu celular (deben estar en el mismo Wifi).</p>
+      <div style="background: white; padding: 20px; display: inline-block; border: 1px solid #ddd;">
+        <img id="qrImage" src="" alt="Cargando QR..." style="width: 200px; height: 200px;">
+      </div>
+      <p style="margin-top: 15px; font-size: 0.9em; color: #666;">O ingresa manualmente:</p>
+      <code id="qrLinkText" style="display: block; padding: 10px; background: #eee; border-radius: 4px;"></code>
+    </div>
+  </div>
+
+  <!-- PLANTILLA PARA PLANILLA DE EQUIPO INDIVIDUAL -->
+  <div id="teamPlanillaReport" style="display: none;">
+    <div class="report-page planilla-page">
+      <header class="report-header">
+        <div class="logo-area">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <h1 class="afemec-logo">A<span class="afemec-text">femec</span></h1>
+          </div>
+          <small class="association-text">ASOCIACIÓN DE FUNCIONARIOS EMPLEADOS DEL MEC</small>
+        </div>
+        <div class="header-info">
+          <h2 style="margin:0; color:#8B0000; font-size: 18px;">PLANILLA DE JUEGO</h2>
+          <p id="planillaDateHeader" style="margin:5px 0 0 0; font-size:12px; font-weight:bold;"></p>
+        </div>
+      </header>
+      <div class="red-line"></div>
+
+      <div class="planilla-info-box">
+        <div class="info-item"><strong>EQUIPO:</strong> <span id="planillaTeamName"
+            style="color:#2c3e50; font-size:1.2em; border-bottom:1px solid #ccc; padding:0 10px;"></span></div>
+        <div class="info-item"><strong>RIVAL:</strong> <span id="planillaRivalName"
+            style="border-bottom:1px solid #ccc; min-width:150px; display:inline-block;"></span></div>
+      </div>
+
+      <table class="report-table planilla-table" id="planillaPlayersTable">
+        <thead>
+          <tr>
+            <th width="40">N°</th>
+            <th style="text-align:left; padding-left:10px;">NOMBRE COMPLETO JUGADOR</th>
+            <th width="80">CÉDULA</th>
+            <th width="40" title="Inscripción">I</th>
+            <th width="40" title="Amarilla">A</th>
+            <th width="40" title="Roja">R</th>
+            <th width="100">ESTADO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dinámico -->
+        </tbody>
+      </table>
+
+      <div class="planilla-footer">
+        <div class="footer-row">
+          <div class="signature-box">
+            <div class="signature-line"></div>
+            <span>FIRMA DELEGADO</span>
+          </div>
+          <div class="signature-box">
+            <div class="signature-line"></div>
+            <span>AUTORIZADO POR</span>
+            <small>(SECRETARÍA AFEMEC)</small>
+          </div>
+        </div>
+        <div class="footer-note">
+          * Este documento es oficial. Jugadores "NO HABILITADOS" no podrán ingresar al campo de juego bajo ninguna
+          circunstancia.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enlace a nuestros archivos de Lógica JavaScript -->
+  <script src="qr_logic.js"></script>
+  <script src="script.js"></script>
+
+</body>
+
+</html>

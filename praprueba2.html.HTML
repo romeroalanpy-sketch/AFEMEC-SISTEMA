@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Sistema de Liga de Fútbol Interactivo</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; background: #f4f4f4; }
+    h2 { margin-top: 2em; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 2em; background: #fff; }
+    td, th { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #eee; }
+    form { margin-bottom: 2em; background: #fff; padding: 1em; border-radius: 4px; }
+    label { display: inline-block; width: 120px; }
+    input, select { margin-bottom: 10px; }
+    caption { font-weight: bold; }
+    .small { font-size: 0.9em; color: #555; }
+    .pdf-btn, .edit-btn, .del-btn, .save-btn, .cancel-btn { background: #1976d2; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin: 2px;}
+    .pdf-btn:hover, .edit-btn:hover, .save-btn:hover, .cancel-btn:hover { background: #125ea2; }
+    .del-btn { background: #e53935; }
+    .del-btn:hover { background: #b71c1c; }
+    .save-btn { background: #43a047; }
+    .save-btn:hover { background: #2e7031; }
+    .cancel-btn { background: #757575; }
+    .cancel-btn:hover { background: #3e3e3e; }
+    #ligaNameForm { margin-bottom: 1em; }
+    #ligaTitle { margin-top: 0; font-size: 2em; }
+    input[type=number].edit-input, input[type=text].edit-input, select.edit-input { width: 60px; }
+    select#scorerTeam, select.edit-input { width: 130px; }
+  </style>
+</head>
+<body>
+  <!-- Zona para el nombre de la liga -->
+  <form id="ligaNameForm">
+    <label for="ligaName">Nombre de la Liga:</label>
+    <input type="text" id="ligaName" placeholder="Escribe el nombre de la liga" maxlength="50" required>
+    <button type="submit">Guardar</button>
+  </form>
+  <h1 id="ligaTitle">Sistema de Liga de Fútbol</h1>
+
+  <button class="pdf-btn" onclick="exportPDF()">Exportar PDF Resumen</button>
+
+  <!-- Módulo de Equipos -->
+  <h2>Registrar Equipo</h2>
+  <form id="teamForm">
+    <label for="teamName">Nombre:</label>
+    <input type="text" id="teamName" required>
+    <label for="teamLogo">Escudo (URL):</label>
+    <input type="text" id="teamLogo">
+    <button type="submit">Agregar Equipo</button>
+  </form>
+  <table id="teamsTable">
+    <caption>Equipos Registrados</caption>
+    <tr>
+      <th>N°</th>
+      <th>Nombre</th>
+      <th>Escudo</th>
+      <th>Acciones</th>
+    </tr>
+  </table>
+
+  <!-- Módulo de Partidos -->
+  <h2>Registrar Partido</h2>
+  <form id="matchForm">
+    <label for="matchA">Equipo A:</label>
+    <select id="matchA" required>
+      <option value="">-- Equipo A --</option>
+    </select>
+    <label for="matchB">Equipo B:</label>
+    <select id="matchB" required>
+      <option value="">-- Equipo B --</option>
+    </select>
+    <label for="matchDate">Fecha y Hora:</label>
+    <input type="datetime-local" id="matchDate" required>
+    <label for="scoreA">Goles A:</label>
+    <input type="number" id="scoreA" min="0" value="0" required>
+    <label for="scoreB">Goles B:</label>
+    <input type="number" id="scoreB" min="0" value="0" required>
+    <br>
+    <label for="scorersA">Goleadores A:<br>
+      <span class="small">(Nombres separados por coma)</span>
+    </label>
+    <textarea id="scorersA" rows="2" cols="30" placeholder="Ej: Juan, Pedro"></textarea>
+    <label for="scorersB">Goleadores B:<br>
+      <span class="small">(Nombres separados por coma)</span>
+    </label>
+    <textarea id="scorersB" rows="2" cols="30" placeholder="Ej: Lucas"></textarea>
+    <br>
+    <label for="yellowsA">Amarillas A:<br>
+      <span class="small">(Nombres separados por coma)</span>
+    </label>
+    <textarea id="yellowsA" rows="1" cols="30" placeholder="Ej: Juan"></textarea>
+    <label for="yellowsB">Amarillas B:<br>
+      <span class="small">(Nombres separados por coma)</span>
+    </label>
+    <textarea id="yellowsB" rows="1" cols="30" placeholder="Ej: Lucas"></textarea>
+    <br>
+    <label for="redsA">Rojas A:<br>
+      <span class="small">(Nombres separados por coma)</span>
+    </label>
+    <textarea id="redsA" rows="1" cols="30" placeholder="Ej: Pedro"></textarea>
+    <label for="redsB">Rojas B:<br>
+      <span class="small">(Nombres separados por coma)</span>
+    </label>
+    <textarea id="redsB" rows="1" cols="30" placeholder="Ej: Luis"></textarea>
+    <br>
+    <button type="submit">Agregar Partido</button>
+  </form>
+  <table id="matchesTable">
+    <caption>Partidos Registrados</caption>
+    <tr>
+      <th>Equipo A</th>
+      <th>Equipo B</th>
+      <th>Fecha y Hora</th>
+      <th>Marcador</th>
+      <th>Goleadores</th>
+      <th>Tarjetas</th>
+      <th>Acciones</th>
+    </tr>
+  </table>
+
+  <!-- Tabla de posiciones -->
+  <h2>Tabla de Posiciones</h2>
+  <table id="standingsTable">
+    <tr>
+      <th>Equipo</th>
+      <th>PJ</th>
+      <th>PG</th>
+      <th>PE</th>
+      <th>PP</th>
+      <th>GF</th>
+      <th>GC</th>
+      <th>DG</th>
+      <th>Pts</th>
+    </tr>
+  </table>
+
+  <!-- Ranking de goleadores -->
+  <h2>Ranking de Goleadores</h2>
+  <form id="addScorerForm">
+    <label for="scorerName">Nombre:</label>
+    <input type="text" id="scorerName" required>
+    <label for="scorerTeam">Equipo:</label>
+    <select id="scorerTeam" required>
+      <option value="">-- Selecciona equipo --</option>
+    </select>
+    <label for="scorerGoals">Goles:</label>
+    <input type="number" id="scorerGoals" min="0" value="0" required>
+    <button type="submit">Agregar Goleador</button>
+  </form>
+  <table id="scorersTable">
+    <tr>
+      <th>N°</th>
+      <th>Jugador</th>
+      <th>Equipo</th>
+      <th>Goles</th>
+      <th>Acciones</th>
+    </tr>
+  </table>
+
+  <!-- Ranking de tarjetas -->
+  <h2>Resumen de Tarjetas</h2>
+  <table id="cardsTable">
+    <tr>
+      <th>Jugador</th>
+      <th>Equipo</th>
+      <th>Amarillas</th>
+      <th>Rojas</th>
+    </tr>
+  </table>
+
+  <script>
+    // --- LocalStorage liga name ---
+    function saveLigaName(name) {
+      localStorage.setItem('ligaName', name);
+    }
+    function loadLigaName() {
+      return localStorage.getItem('ligaName') || "";
+    }
+
+    // DOM para nombre de liga
+    const ligaNameForm = document.getElementById('ligaNameForm');
+    const ligaNameInput = document.getElementById('ligaName');
+    const ligaTitle = document.getElementById('ligaTitle');
+
+    // Al cargar la página, mostrar el nombre guardado
+    let storedLigaName = loadLigaName();
+    if (storedLigaName) {
+      ligaTitle.textContent = storedLigaName;
+      ligaNameInput.value = storedLigaName;
+    }
+
+    ligaNameForm.onsubmit = function(e) {
+      e.preventDefault();
+      ligaTitle.textContent = ligaNameInput.value.trim() || "Sistema de Liga de Fútbol";
+      saveLigaName(ligaTitle.textContent);
+    };
+
+    // --- LocalStorage general ---
+    function saveAll() {
+      localStorage.setItem('equipos', JSON.stringify(equipos));
+      localStorage.setItem('partidos', JSON.stringify(partidos));
+      localStorage.setItem('scorers', JSON.stringify(scorers));
+      localStorage.setItem('manualStandings', JSON.stringify(manualStandings));
+    }
+    function loadAll() {
+      let eq = localStorage.getItem('equipos');
+      let pa = localStorage.getItem('partidos');
+      let sc = localStorage.getItem('scorers');
+      let ms = localStorage.getItem('manualStandings');
+      if (eq) equipos.push(...JSON.parse(eq));
+      if (pa) partidos.push(...JSON.parse(pa));
+      if (sc) scorers.push(...JSON.parse(sc));
+      if (ms) Object.assign(manualStandings, JSON.parse(ms));
+    }
+
+    // DATA
+    const equipos = [];
+    const partidos = [];
+    const scorers = [];
+    const manualStandings = {}; // {nombreEquipo: {PJ,PG,PE,PP,GF,GC}}
+
+    // DOM Elements
+    const teamForm = document.getElementById('teamForm');
+    const teamsTable = document.getElementById('teamsTable');
+    const matchForm = document.getElementById('matchForm');
+    const matchASelect = document.getElementById('matchA');
+    const matchBSelect = document.getElementById('matchB');
+    const matchesTable = document.getElementById('matchesTable');
+    const standingsTable = document.getElementById('standingsTable');
+    const scorersTable = document.getElementById('scorersTable');
+    const addScorerForm = document.getElementById('addScorerForm');
+    const scorerTeamSelect = document.getElementById('scorerTeam');
+    const cardsTable = document.getElementById('cardsTable');
+
+    // Cargar datos al iniciar
+    loadAll();
+
+    // Renderizar tablas al iniciar
+    updateTeamsTable();
+    updateTeamsSelects();
+    updateMatchesTable();
+    updateStandingsTable();
+    updateScorersTable();
+    updateCardsTable();
+    updateScorerTeamSelect();
+
+    // TEAM FORM SUBMIT
+    teamForm.onsubmit = function(e) {
+      e.preventDefault();
+      const nombre = document.getElementById('teamName').value.trim();
+      const escudo = document.getElementById('teamLogo').value.trim() || "https://placehold.co/32x32";
+      if (!nombre) return;
+      equipos.push({ nombre, escudo });
+      updateTeamsTable();
+      updateTeamsSelects();
+      updateScorerTeamSelect();
+      saveAll();
+      teamForm.reset();
+    };
+
+    // Editar equipo
+    function editEquipo(idx) {
+      const tr = teamsTable.rows[idx+2];
+      const eq = equipos[idx];
+      tr.cells[1].innerHTML = `<input type="text" class="edit-input" id="editTeamName${idx}" value="${eq.nombre}">`;
+      tr.cells[2].innerHTML = `<input type="text" class="edit-input" id="editTeamLogo${idx}" value="${eq.escudo}">`;
+      tr.cells[3].innerHTML = `<button class="save-btn" onclick="saveEditEquipo(${idx})">Guardar</button>
+        <button class="cancel-btn" onclick="updateTeamsTable()">Cancelar</button>`;
+    }
+    function saveEditEquipo(idx) {
+      const name = document.getElementById(`editTeamName${idx}`).value.trim();
+      const logo = document.getElementById(`editTeamLogo${idx}`).value.trim() || "https://placehold.co/32x32";
+      if (!name) return;
+      equipos[idx].nombre = name;
+      equipos[idx].escudo = logo;
+      updateTeamsTable();
+      updateTeamsSelects();
+      updateScorerTeamSelect();
+      saveAll();
+    }
+    function delEquipo(idx) {
+      if (!confirm("¿Eliminar este equipo?")) return;
+      let nombre = equipos[idx].nombre;
+      for (let i = partidos.length-1; i >= 0; i--) {
+        if (partidos[i].equipoA === nombre || partidos[i].equipoB === nombre) partidos.splice(i,1);
+      }
+      for (let i = scorers.length-1; i >= 0; i--) {
+        if (scorers[i].equipo === nombre) scorers.splice(i,1);
+      }
+      equipos.splice(idx,1);
+      delete manualStandings[nombre];
+      updateTeamsTable(); updateTeamsSelects();
+      updateScorerTeamSelect();
+      updateMatchesTable(); updateStandingsTable(); updateScorersTable();
+      saveAll();
+    }
+
+    // MATCH FORM SUBMIT
+    matchForm.onsubmit = function(e) {
+      e.preventDefault();
+      const indexA = matchASelect.selectedIndex - 1;
+      const indexB = matchBSelect.selectedIndex - 1;
+      if (indexA < 0 || indexB < 0 || indexA === indexB) return alert("Selecciona equipos distintos.");
+      const equipoA = equipos[indexA].nombre;
+      const equipoB = equipos[indexB].nombre;
+      const fecha = document.getElementById('matchDate').value;
+      const scoreA = parseInt(document.getElementById('scoreA').value, 10) || 0;
+      const scoreB = parseInt(document.getElementById('scoreB').value, 10) || 0;
+      // Goleadores
+      const scorersA = document.getElementById('scorersA').value.split(",").map(n=>n.trim()).filter(Boolean);
+      const scorersB = document.getElementById('scorersB').value.split(",").map(n=>n.trim()).filter(Boolean);
+      // Tarjetas
+      const yellowsA = document.getElementById('yellowsA').value.split(",").map(n=>n.trim()).filter(Boolean);
+      const yellowsB = document.getElementById('yellowsB').value.split(",").map(n=>n.trim()).filter(Boolean);
+      const redsA = document.getElementById('redsA').value.split(",").map(n=>n.trim()).filter(Boolean);
+      const redsB = document.getElementById('redsB').value.split(",").map(n=>n.trim()).filter(Boolean);
+
+      partidos.push({ equipoA, equipoB, fecha, scoreA, scoreB, scorersA, scorersB, yellowsA, yellowsB, redsA, redsB });
+
+      // Suma goles a goleadores si ya existen en ranking
+      scorersA.forEach(nombre => {
+        let jug = scorers.find(j => j.nombre.toLowerCase() === nombre.toLowerCase() && j.equipo === equipoA);
+        if (jug) jug.goles++;
+      });
+      scorersB.forEach(nombre => {
+        let jug = scorers.find(j => j.nombre.toLowerCase() === nombre.toLowerCase() && j.equipo === equipoB);
+        if (jug) jug.goles++;
+      });
+
+      updateMatchesTable();
+      updateStandingsTable();
+      updateScorersTable();
+      saveAll();
+      matchForm.reset();
+    };
+
+    // Editar partido
+    function editPartido(idx) {
+      const pt = partidos[idx];
+      const tr = matchesTable.rows[idx+2];
+      tr.cells[2].innerHTML = `<input type="datetime-local" class="edit-input" id="editFecha${idx}" value="${pt.fecha}">`;
+      tr.cells[3].innerHTML = `<input type="number" class="edit-input" id="editScoreA${idx}" value="${pt.scoreA}"> - <input type="number" class="edit-input" id="editScoreB${idx}" value="${pt.scoreB}">`;
+      tr.cells[6].innerHTML = `<button class="save-btn" onclick="saveEditPartido(${idx})">Guardar</button>
+        <button class="cancel-btn" onclick="updateMatchesTable()">Cancelar</button>`;
+    }
+    function saveEditPartido(idx) {
+      const fecha = document.getElementById(`editFecha${idx}`).value;
+      const scoreA = parseInt(document.getElementById(`editScoreA${idx}`).value,10)||0;
+      const scoreB = parseInt(document.getElementById(`editScoreB${idx}`).value,10)||0;
+      partidos[idx].fecha = fecha;
+      partidos[idx].scoreA = scoreA;
+      partidos[idx].scoreB = scoreB;
+      updateMatchesTable(); updateStandingsTable();
+      saveAll();
+    }
+    function delPartido(idx) {
+      if (!confirm("¿Eliminar este partido?")) return;
+      partidos.splice(idx,1);
+      updateMatchesTable(); updateStandingsTable();
+      saveAll();
+    }
+
+    // GOLEADORES: SELECT DE EQUIPOS (actualizado siempre)
+    function updateScorerTeamSelect(selectedValue = "") {
+      const currentValue = selectedValue || scorerTeamSelect.value;
+      while (scorerTeamSelect.options.length > 1) scorerTeamSelect.remove(1);
+      equipos.forEach(eq => {
+        const opt = document.createElement('option');
+        opt.value = eq.nombre;
+        opt.textContent = eq.nombre;
+        scorerTeamSelect.appendChild(opt);
+      });
+      scorerTeamSelect.value = currentValue;
+    }
+
+    // SCORERS FORM
+    addScorerForm.onsubmit = function(e) {
+      e.preventDefault();
+      const nombre = document.getElementById('scorerName').value.trim();
+      const equipo = scorerTeamSelect.value;
+      const goles = parseInt(document.getElementById('scorerGoals').value,10) || 0;
+      if (!nombre || !equipo) return;
+      scorers.push({ nombre, equipo, goles });
+      updateScorersTable();
+      saveAll();
+      addScorerForm.reset();
+    };
+
+    // --- CORREGIDO RANKING DE GOLEADORES ---
+    function updateScorersTable() {
+      // ranking ordenado DESC y con idx real
+      let ranking = scorers
+        .map((j, idx) => ({ ...j, idx })) // idx real
+        .sort((a, b) => b.goles - a.goles || a.nombre.localeCompare(b.nombre));
+      while (scorersTable.rows.length > 1) scorersTable.deleteRow(1);
+      ranking.forEach((j, i) => {
+        let row = scorersTable.insertRow();
+        row.insertCell(0).textContent = i + 1;
+        row.insertCell(1).textContent = j.nombre;
+        row.insertCell(2).textContent = j.equipo;
+        row.insertCell(3).textContent = j.goles;
+        row.insertCell(4).innerHTML =
+          `<button class="edit-btn" data-idx="${j.idx}" onclick="editScorer(this)">Editar</button>
+           <button class="del-btn" data-idx="${j.idx}" onclick="delScorer(this)">Eliminar</button>`;
+      });
+    }
+
+    // Editar goleador (usa el idx real)
+    function editScorer(btn) {
+      const idx = parseInt(btn.getAttribute("data-idx"));
+      const tr = btn.closest("tr");
+      const scorer = scorers[idx];
+      tr.cells[1].innerHTML = `<input type="text" class="edit-input" id="editScorerNombre${idx}" value="${scorer.nombre}">`;
+      let selectHtml = `<select id="editScorerEquipo${idx}" class="edit-input" required>`;
+      selectHtml += `<option value="">-- Selecciona equipo --</option>`;
+      equipos.forEach(eq => {
+        const selected = scorer.equipo === eq.nombre ? "selected" : "";
+        selectHtml += `<option value="${eq.nombre}" ${selected}>${eq.nombre}</option>`;
+      });
+      selectHtml += `</select>`;
+      tr.cells[2].innerHTML = selectHtml;
+      tr.cells[3].innerHTML = `<input type="number" class="edit-input" id="editScorerGoles${idx}" value="${scorer.goles}">`;
+      tr.cells[4].innerHTML =
+        `<button class="save-btn" onclick="saveEditScorer(${idx})">Guardar</button>
+         <button class="cancel-btn" onclick="updateScorersTable()">Cancelar</button>`;
+    }
+
+    function saveEditScorer(idx) {
+      const nombre = document.getElementById(`editScorerNombre${idx}`).value.trim();
+      const equipo = document.getElementById(`editScorerEquipo${idx}`).value.trim();
+      const goles = parseInt(document.getElementById(`editScorerGoles${idx}`).value,10) || 0;
+      if (!nombre || !equipo) return;
+      scorers[idx].nombre = nombre;
+      scorers[idx].equipo = equipo;
+      scorers[idx].goles = goles;
+      updateScorersTable();
+      saveAll();
+    }
+
+    function delScorer(btn) {
+      const idx = parseInt(btn.getAttribute("data-idx"));
+      if (!confirm("¿Eliminar este goleador?")) return;
+      scorers.splice(idx, 1);
+      updateScorersTable();
+      saveAll();
+    }
+
+    // Update Cards Table (sólo para compatibilidad visual)
+    function updateCardsTable() {
+      while (cardsTable.rows.length > 1) cardsTable.deleteRow(1);
+    }
+
+    // Update Standings Table (igual que antes)
+    function updateStandingsTable() {
+      const tablaAuto = equipos.map(eq => ({
+        nombre: eq.nombre,
+        PJ: 0, PG: 0, PE: 0, PP: 0,
+        GF: 0, GC: 0
+      }));
+      partidos.forEach(pt => {
+        let eqA = tablaAuto.find(x => x.nombre === pt.equipoA);
+        let eqB = tablaAuto.find(x => x.nombre === pt.equipoB);
+        if (!eqA || !eqB) return;
+        eqA.PJ++; eqB.PJ++;
+        eqA.GF += pt.scoreA; eqA.GC += pt.scoreB;
+        eqB.GF += pt.scoreB; eqB.GC += pt.scoreA;
+        if (pt.scoreA > pt.scoreB) { eqA.PG++; eqB.PP++; }
+        else if (pt.scoreA < pt.scoreB) { eqB.PG++; eqA.PP++; }
+        else { eqA.PE++; eqB.PE++; }
+      });
+
+      const tabla = equipos.map(eq => {
+        let auto = tablaAuto.find(x=>x.nombre===eq.nombre) || {};
+        let m = manualStandings[eq.nombre] || {};
+        return {
+          nombre: eq.nombre,
+          PJ: m.PJ !== undefined ? m.PJ : auto.PJ,
+          PG: m.PG !== undefined ? m.PG : auto.PG,
+          PE: m.PE !== undefined ? m.PE : auto.PE,
+          PP: m.PP !== undefined ? m.PP : auto.PP,
+          GF: m.GF !== undefined ? m.GF : auto.GF,
+          GC: m.GC !== undefined ? m.GC : auto.GC,
+          DG: 0
+        };
+      });
+      tabla.forEach(eq => {
+        eq.DG = (parseInt(eq.GF)||0) - (parseInt(eq.GC)||0);
+        eq.PTS = (parseInt(eq.PG)||0)*3 + (parseInt(eq.PE)||0);
+      });
+
+      while (standingsTable.rows.length > 1) standingsTable.deleteRow(1);
+      tabla.sort((a, b) =>
+        b.PTS - a.PTS ||
+        b.DG - a.DG ||
+        b.GF - a.GF ||
+        a.nombre.localeCompare(b.nombre)
+      );
+      tabla.forEach(eq => {
+        let row = standingsTable.insertRow();
+        row.insertCell(0).textContent = eq.nombre;
+        row.insertCell(1).innerHTML = `<input type="number" class="edit-input" value="${eq.PJ||0}" onchange="editStanding('${eq.nombre}','PJ',this.value)">`;
+        row.insertCell(2).innerHTML = `<input type="number" class="edit-input" value="${eq.PG||0}" onchange="editStanding('${eq.nombre}','PG',this.value)">`;
+        row.insertCell(3).innerHTML = `<input type="number" class="edit-input" value="${eq.PE||0}" onchange="editStanding('${eq.nombre}','PE',this.value)">`;
+        row.insertCell(4).innerHTML = `<input type="number" class="edit-input" value="${eq.PP||0}" onchange="editStanding('${eq.nombre}','PP',this.value)">`;
+        row.insertCell(5).innerHTML = `<input type="number" class="edit-input" value="${eq.GF||0}" onchange="editStanding('${eq.nombre}','GF',this.value)">`;
+        row.insertCell(6).innerHTML = `<input type="number" class="edit-input" value="${eq.GC||0}" onchange="editStanding('${eq.nombre}','GC',this.value)">`;
+        row.insertCell(7).textContent = eq.DG>0? "+"+eq.DG : eq.DG;
+        row.insertCell(8).textContent = eq.PTS;
+      });
+    }
+    function editStanding(nombre, campo, valor) {
+      if (!manualStandings[nombre]) manualStandings[nombre] = {};
+      if (valor === "" || valor === null) {
+        delete manualStandings[nombre][campo];
+        if (Object.keys(manualStandings[nombre]).length === 0) delete manualStandings[nombre];
+      } else {
+        manualStandings[nombre][campo] = parseInt(valor)||0;
+      }
+      saveAll();
+      updateStandingsTable();
+    }
+
+    // Export PDF (igual que antes)
+    function exportPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 10;
+
+      doc.setFontSize(16);
+      doc.text(ligaTitle.textContent, 10, y);
+      y += 10;
+
+      doc.setFontSize(12);
+      doc.text('Tabla de Posiciones:', 10, y);
+      y += 6;
+      let tabla = [["Equipo","PJ","PG","PE","PP","GF","GC","DG","Pts"]];
+      for (let i = 1; i < standingsTable.rows.length; i++) {
+        const row = standingsTable.rows[i];
+        tabla.push(Array.from(row.cells).map(c => c.textContent));
+      }
+      tabla.forEach((fila, i) => {
+        doc.text(fila.join(" | "), 10, y);
+        y += 6;
+        if (y > 270) { doc.addPage(); y = 10; }
+      });
+      y += 4;
+
+      doc.text('Ranking de Goleadores:', 10, y);
+      y += 6;
+      let tablaG = [["N°","Jugador","Equipo","Goles"]];
+      for (let i = 1; i < scorersTable.rows.length; i++) {
+        const row = scorersTable.rows[i];
+        tablaG.push(Array.from(row.cells).map(c => c.textContent));
+      }
+      tablaG.forEach((fila, i) => {
+        doc.text(fila.join(" | "), 10, y);
+        y += 6;
+        if (y > 270) { doc.addPage(); y = 10; }
+      });
+
+      doc.save('resumen_liga_futbol.pdf');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados en Vivo - Torneo AFEMEC</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Librerías para PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #8B0000;
+            --secondary-color: #6C851E;
+            --accent-color: #1a237e;
+            --bg-light: #f8f9fa;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .public-container {
+            max-width: 1000px;
+            margin: 20px auto;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            padding-bottom: 40px;
+        }
+
+        .public-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #a50000 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .live-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #ff4d4d;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: scale(1.05);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .league-name {
+            font-size: 2.5em;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 900;
+        }
+
+        .date-subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+
+        .update-time {
+            font-size: 0.8em;
+            opacity: 0.7;
+            margin-top: 15px;
+        }
+
+        .public-section {
+            padding: 30px 40px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+
+        .section-header h2 {
+            margin: 0;
+            color: #333;
+            text-transform: uppercase;
+            font-size: 1.5em;
+            border: none;
+        }
+
+        /* Match Cards */
+        .matches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .match-card {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .match-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .match-info {
+            text-align: center;
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .match-teams {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .team-name {
+            flex: 1;
+            text-align: center;
+        }
+
+        .match-score {
+            font-size: 2em;
+            background: #f0f0f0;
+            padding: 5px 15px;
+            border-radius: 8px;
+            margin: 0 15px;
+            color: var(--primary-color);
+        }
+
+        .match-details {
+            margin-top: 15px;
+            font-size: 0.85em;
+            color: #555;
+            border-top: 1px solid #f0f0f0;
+            padding-top: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .public-section {
+                padding: 20px;
+            }
+
+            .league-name {
+                font-size: 1.8em;
+            }
+
+            .matches-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Table Overrides for Public View */
+        .public-table {
+            width: 100%;
+            border-radius: 0;
+            box-shadow: none;
+            border: 1px solid #eee;
+        }
+
+        .public-table th {
+            background-color: var(--secondary-color);
+            padding: 15px;
+        }
+
+        .public-table td {
+            padding: 15px;
+            text-align: center;
+        }
+
+        .pos-badge {
+            background: #eee;
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: bold;
+        }
+
+        .top3 {
+            background: gold;
+            color: #000;
+        }
+
+        .top2 {
+            background: silver;
+        }
+
+        .top1 {
+            background: #cd7f32;
+            color: #fff;
+        }
+
+        .cards-flex {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .cards-list {
+            flex: 1;
+            min-width: 250px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="public-container">
+        <header class="public-header">
+            <div class="live-badge">🔴 EN VIVO</div>
+            <h1 class="league-name" id="leagueName">TORNEO AFEMEC</h1>
+            <div class="date-subtitle" id="reportSubtitle">Resultados y Posiciones</div>
+            <div class="update-time" id="lastUpdate">Actualizado: --:--:--</div>
+            <button onclick="exportPDF()"
+                style="margin-top: 20px; background: #e67e22; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">📄
+                Descargar Reporte PDF</button>
+        </header>
+
+        <!-- PLANTILLA OCULTA PARA REPORTE PDF (Copiada para funcionalidad) -->
+        <div id="pdfReport" style="display: none;">
+            <div class="report-page">
+                <header class="report-header">
+                    <div class="logo-area">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <h1 class="afemec-logo">A<span class="afemec-text">femec</span></h1>
+                        </div>
+                        <small class="association-text">ASOCIACIÓN DE FUNCIONARIOS EMPLEADOS DEL<br>MINISTERIO DE
+                            EDUCACIÓN Y CIENCIAS</small>
+                    </div>
+                    <div class="header-info">
+                        <p><strong>Personería Jurídica</strong><br>Reconocida por Decreto N° 6049<br>en fecha 31 de
+                            Julio de 1959<br>Fundada el 7-09-1957<br>14 de Mayo N° 971 e/ Manduvirá y
+                            Piribebuy<br>Asunción - Paraguay</p>
+                    </div>
+                </header>
+                <div class="red-line"></div>
+                <div class="report-body">
+                    <h2 class="report-title" id="reportTournamentName">TORNEO DE FUTBOL AFEMEC</h2>
+                    <div class="report-subtitle-row"><span id="reportPdfSubtitle">INFORME GENERAL</span></div>
+                    <div class="report-section" id="sectionMatches" style="display:none;">
+                        <h3 class="section-title">RESULTADOS RECIENTES</h3>
+                        <table class="report-table" id="reportMatches">
+                            <thead>
+                                <tr>
+                                    <th width="30%">EQUIPO LOCAL</th>
+                                    <th width="10%">GLS</th>
+                                    <th width="20%">VS</th>
+                                    <th width="30%">EQUIPO VISITA</th>
+                                    <th width="10%">GLS</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="report-section">
+                        <h3 class="section-title">POSICIONES</h3>
+                        <table class="report-table" id="reportStandings">
+                            <thead>
+                                <tr>
+                                    <th width="5%">POS</th>
+                                    <th width="35%">EQUIPO</th>
+                                    <th width="7%">PJ</th>
+                                    <th width="7%">PG</th>
+                                    <th width="7%">PE</th>
+                                    <th width="7%">PP</th>
+                                    <th width="7%">GF</th>
+                                    <th width="7%">GC</th>
+                                    <th width="8%">DG</th>
+                                    <th width="10%">PUNTOS</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="cards-container">
+                        <div class="report-section half-width">
+                            <h3 class="section-title">TARJETAS AMARILLAS</h3>
+                            <table class="report-table" id="reportYellows">
+                                <thead>
+                                    <tr>
+                                        <th width="10%">NRO</th>
+                                        <th width="45%">JUGADOR</th>
+                                        <th width="45%">EQUIPO</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <div class="report-section half-width">
+                            <h3 class="section-title">TARJETAS ROJAS</h3>
+                            <table class="report-table" id="reportReds">
+                                <thead>
+                                    <tr>
+                                        <th width="10%">NRO</th>
+                                        <th width="45%">JUGADOR</th>
+                                        <th width="45%">EQUIPO</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="report-section">
+                        <h3 class="section-title">GOLEADORES DE LA JORNADA</h3>
+                        <table class="report-table" id="reportMatchdayScorers">
+                            <thead>
+                                <tr>
+                                    <th width="10%">NRO</th>
+                                    <th width="40%">JUGADORES</th>
+                                    <th width="40%">EQUIPOS</th>
+                                    <th width="10%">GOLES</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="report-section">
+                        <h3 class="section-title">GOLEADORES DEL TORNEO</h3>
+                        <table class="report-table" id="reportScorers">
+                            <thead>
+                                <tr>
+                                    <th width="10%">NRO</th>
+                                    <th width="40%">JUGADORES</th>
+                                    <th width="40%">EQUIPOS</th>
+                                    <th width="10%">GOLES</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="report-footer">
+                    <div class="red-line"></div>
+                    <div class="footer-content">
+                        <div class="footer-col"><strong>Sede Administrativa</strong><br>14 de Mayo N° 971<br>e/
+                            Manduvirá y Piribebuy<br>Teléfonos: 491 241-3 / 496 729</div>
+                        <div class="footer-col"><strong>Centro Educativo Infantil</strong><br>N° 7.971 "KUNU'U
+                            RAITY"<br>Manduvirá e/14 de Mayo y Alberdi<br>Teléfono: 491 428</div>
+                        <div class="footer-col"><strong>Sede Social</strong><br>(Lambaré)<br>Avda. Cacique
+                            Lambaré<br>Teléfono: 900 195</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN: RESULTADOS RECIENTES -->
+        <div class="public-section" id="sectionResults">
+            <div class="section-header">
+                <h2>Resultados de la Jornada</h2>
+            </div>
+            <div class="matches-grid" id="matchesGrid">
+                <!-- Dinámico -->
+            </div>
+        </div>
+
+        <!-- SECCIÓN: POSICIONES -->
+        <div class="public-section">
+            <div class="section-header">
+                <h2>Tabla de Posiciones</h2>
+            </div>
+            <table class="public-table">
+                <thead>
+                    <tr>
+                        <th width="50">#</th>
+                        <th>Equipo</th>
+                        <th>PJ</th>
+                        <th>PG</th>
+                        <th>PE</th>
+                        <th>PP</th>
+                        <th>GF</th>
+                        <th>GC</th>
+                        <th>DG</th>
+                        <th>PTS</th>
+                    </tr>
+                </thead>
+                <tbody id="standingsBody">
+                    <!-- Dinámico -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="public-section">
+            <div class="cards-flex">
+                <!-- GOLEADORES -->
+                <div class="cards-list">
+                    <div class="section-header">
+                        <h2>Goleadores</h2>
+                    </div>
+                    <table class="public-table">
+                        <thead>
+                            <tr>
+                                <th>Jugador</th>
+                                <th>Goles</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scorersBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- TARJETAS SANCIONADAS -->
+                <div class="cards-list">
+                    <div class="section-header">
+                        <h2>Sanciones</h2>
+                    </div>
+                    <table class="public-table">
+                        <thead>
+                            <tr>
+                                <th>Jugador</th>
+                                <th>Tarjeta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cardsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <footer style="text-align: center; color: #999; font-size: 0.8em; margin-top: 20px;">
+            Sistema de Gestión de Torneos - AFEMEC &copy; 2025
+        </footer>
+    </div>
+
+    <script>
+        const API_URL = 'api';
+        let globalTeams = [];
+        let globalMatches = [];
+        let globalPlayers = [];
+        let globalLeagueName = "Torneo AFEMEC";
+
+
+        async function loadPublicData() {
+            try {
+                // 1. Settings
+                const resSettings = await fetch(`${API_URL}/settings`);
+                const settings = await resSettings.json();
+                document.getElementById('leagueName').textContent = settings.league_name.toUpperCase();
+
+                // 2. Load Teams, Matches, Players
+                const [resTeams, resMatches, resPlayers] = await Promise.all([
+                    fetch(`${API_URL}/teams`),
+                    fetch(`${API_URL}/matches`),
+                    fetch(`${API_URL}/players/all`)
+                ]);
+
+                globalTeams = await resTeams.json();
+                globalMatches = await resMatches.json();
+                globalPlayers = await resPlayers.json();
+                globalLeagueName = settings.league_name;
+
+                // Update last update time
+                document.getElementById('lastUpdate').textContent = 'Actualizado: ' + new Date().toLocaleTimeString();
+
+                renderResults(globalMatches);
+                renderStandings(globalTeams, globalMatches);
+                renderScorers(globalMatches, globalPlayers);
+                renderSanciones(globalPlayers);
+
+            } catch (err) {
+                console.error("Error loading data:", err);
+            }
+        }
+
+        function renderResults(matches) {
+            const grid = document.getElementById('matchesGrid');
+            grid.innerHTML = "";
+
+            if (matches.length === 0) {
+                grid.innerHTML = "<p>No hay partidos registrados aún.</p>";
+                return;
+            }
+
+            // Show latest 6 matches or last matchday
+            let lastDay = Math.max(...matches.map(m => m.match_day || 0));
+            const recent = matches.filter(m => (m.match_day || 0) === lastDay).reverse();
+
+            document.getElementById('reportSubtitle').textContent = lastDay > 0 ? `Resultados de la Fecha ${lastDay}` : "Resultados Generales";
+
+            recent.forEach(m => {
+                const card = document.createElement('div');
+                card.className = 'match-card';
+
+                const scorersA = (m.scorersA || []).join(", ");
+                const scorersB = (m.scorersB || []).join(", ");
+
+                card.innerHTML = `
+                    <div class="match-info">Fecha ${m.match_day || '-'} | ${new Date(m.date).toLocaleDateString()}</div>
+                    <div class="match-teams">
+                        <div class="team-name">${m.equipoA}</div>
+                        <div class="match-score">${m.score_a} - ${m.score_b}</div>
+                        <div class="team-name">${m.equipoB}</div>
+                    </div>
+                    ${(scorersA || scorersB) ? `
+                        <div class="match-details">
+                            <div>⚽ ${scorersA || '-'}</div>
+                            <div>⚽ ${scorersB || '-'}</div>
+                        </div>
+                    ` : ''}
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderStandings(teams, matches) {
+            const tbody = document.getElementById('standingsBody');
+            tbody.innerHTML = "";
+
+            const table = teams.map(eq => ({
+                nombre: eq.name,
+                PJ: 0, PG: 0, PE: 0, PP: 0, GF: 0, GC: 0, DG: 0, PTS: 0
+            }));
+
+            matches.forEach(pt => {
+                let eqA = table.find(x => x.nombre === pt.equipoA);
+                let eqB = table.find(x => x.nombre === pt.equipoB);
+                if (eqA && eqB) {
+                    eqA.PJ++; eqB.PJ++;
+                    eqA.GF += pt.score_a; eqA.GC += pt.score_b;
+                    eqB.GF += pt.score_b; eqB.GC += pt.score_a;
+                    if (pt.score_a > pt.score_b) { eqA.PG++; eqB.PP++; eqA.PTS += 3; }
+                    else if (pt.score_a < pt.score_b) { eqB.PG++; eqA.PP++; eqB.PTS += 3; }
+                    else { eqA.PE++; eqB.PE++; eqA.PTS += 1; eqB.PTS += 1; }
+                }
+            });
+            table.forEach(eq => eq.DG = eq.GF - eq.GC);
+            table.sort((a, b) => b.PTS - a.PTS || b.DG - a.DG || b.GF - a.GF);
+
+            table.forEach((eq, idx) => {
+                const row = document.createElement('tr');
+                let posClass = idx === 0 ? 'top3' : (idx === 1 ? 'top2' : (idx === 2 ? 'top1' : ''));
+
+                row.innerHTML = `
+                    <td><span class="pos-badge ${posClass}">${idx + 1}</span></td>
+                    <td style="text-align: left; font-weight: bold;">${eq.nombre}</td>
+                    <td>${eq.PJ}</td>
+                    <td>${eq.PG}</td>
+                    <td>${eq.PE}</td>
+                    <td>${eq.PP}</td>
+                    <td>${eq.GF}</td>
+                    <td>${eq.GC}</td>
+                    <td>${eq.DG}</td>
+                    <td style="font-size: 1.2em; font-weight: 900; color: var(--primary-color);">${eq.PTS}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderScorers(matches, players) {
+            const tbody = document.getElementById('scorersBody');
+            tbody.innerHTML = "";
+
+            const scorers = [];
+            matches.forEach(m => {
+                [...(m.scorersA || []), ...(m.scorersB || [])].forEach(name => {
+                    let s = scorers.find(x => x.name === name);
+                    if (s) s.goals++;
+                    else scorers.push({ name, goals: 1 });
+                });
+            });
+
+            scorers.sort((a, b) => b.goals - a.goals);
+            scorers.slice(0, 5).forEach(s => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${s.name}</td><td><strong>${s.goals}</strong></td>`;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderSanciones(players) {
+            const tbody = document.getElementById('cardsBody');
+            tbody.innerHTML = "";
+            const sancionados = players.filter(p => p.amarilla || p.roja);
+
+            if (sancionados.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='2' style='color:#999;'>Sin sanciones activas</td></tr>";
+                return;
+            }
+
+            sancionados.forEach(p => {
+                const row = document.createElement('tr');
+                const card = p.roja ? '🟥 Roja' : '🟨 Amarilla';
+                row.innerHTML = `<td>${p.name}</td><td>${card}</td>`;
+                tbody.appendChild(row);
+            });
+        }
+
+        // --- FUNCIONALIDAD EXPORTAR PDF (PARA PÚBLICO) ---
+        function exportPDF() {
+            const reportContainer = document.getElementById('pdfReport');
+            const element = reportContainer.querySelector('.report-page');
+            document.getElementById('reportTournamentName').textContent = globalLeagueName.toUpperCase();
+
+            let ultimaFechaNum = 0;
+            if (globalMatches.length > 0) {
+                ultimaFechaNum = Math.max(...globalMatches.map(p => p.match_day || 0));
+            }
+            document.getElementById('reportPdfSubtitle').textContent = ultimaFechaNum > 0 ? `INFORME DE LA FECHA ${ultimaFechaNum}` : "INFORME GENERAL";
+
+            // Llenar tablas del PDF
+            const tbodyMatches = document.getElementById('reportMatches').querySelector('tbody');
+            tbodyMatches.innerHTML = "";
+            const partidosDeLaFecha = globalMatches.filter(p => (p.match_day || 0) === ultimaFechaNum);
+            partidosDeLaFecha.forEach(pt => {
+                tbodyMatches.insertAdjacentHTML('beforeend', `<tr><td>${pt.equipoA}</td><td>${pt.score_a}</td><td>VS</td><td>${pt.equipoB}</td><td>${pt.score_b}</td></tr>`);
+            });
+            document.getElementById('sectionMatches').style.display = partidosDeLaFecha.length > 0 ? 'block' : 'none';
+
+            const tbodyStandings = document.getElementById('reportStandings').querySelector('tbody');
+            tbodyStandings.innerHTML = "";
+            const standings = globalTeams.map(eq => ({ nombre: eq.name, PJ: 0, PG: 0, PE: 0, PP: 0, GF: 0, GC: 0, DG: 0, PTS: 0 }));
+            globalMatches.forEach(pt => {
+                let eqA = standings.find(x => x.nombre === pt.equipoA);
+                let eqB = standings.find(x => x.nombre === pt.equipoB);
+                if (eqA && eqB) {
+                    eqA.PJ++; eqB.PJ++; eqA.GF += pt.score_a; eqA.GC += pt.score_b; eqB.GF += pt.score_b; eqB.GC += pt.score_a;
+                    if (pt.score_a > pt.score_b) { eqA.PG++; eqB.PP++; eqA.PTS += 3; }
+                    else if (pt.score_a < pt.score_b) { eqB.PG++; eqA.PP++; eqB.PTS += 3; }
+                    else { eqA.PE++; eqB.PE++; eqA.PTS += 1; eqB.PTS += 1; }
+                }
+            });
+            standings.forEach(eq => eq.DG = eq.GF - eq.GC);
+            standings.sort((a, b) => b.PTS - a.PTS || b.DG - a.DG || b.GF - a.GF);
+            standings.forEach((eq, idx) => {
+                tbodyStandings.insertAdjacentHTML('beforeend', `<tr><td>${idx + 1}</td><td style="text-align:left;">${eq.nombre.toUpperCase()}</td><td>${eq.PJ}</td><td>${eq.PG}</td><td>${eq.PE}</td><td>${eq.PP}</td><td>${eq.GF}</td><td>${eq.GC}</td><td>${eq.DG}</td><td>${eq.PTS}</td></tr>`);
+            });
+
+            // Goleadores y Tarjetas
+            const tbodyScorers = document.getElementById('reportScorers').querySelector('tbody');
+            tbodyScorers.innerHTML = "";
+            const scorers = [];
+            globalMatches.forEach(m => {
+                [...(m.scorersA || []), ...(m.scorersB || [])].forEach(name => {
+                    let s = scorers.find(x => x.name === name); if (s) s.goals++; else scorers.push({ name, goals: 1, team: (m.scorersA.includes(name) ? m.equipoA : m.equipoB) });
+                })
+            });
+            scorers.sort((a, b) => b.goals - a.goals).slice(0, 10).forEach((s, i) => {
+                tbodyScorers.insertAdjacentHTML('beforeend', `<tr><td>${i + 1}</td><td>${s.name.toUpperCase()}</td><td>${s.team.toUpperCase()}</td><td>${s.goals}</td></tr>`);
+            });
+
+            const tbodyYellows = document.getElementById('reportYellows').querySelector('tbody');
+            const tbodyReds = document.getElementById('reportReds').querySelector('tbody');
+            tbodyYellows.innerHTML = ""; tbodyReds.innerHTML = "";
+            globalPlayers.filter(p => p.amarilla).forEach((p, i) => tbodyYellows.insertAdjacentHTML('beforeend', `<tr><td>${i + 1}</td><td>${p.name.toUpperCase()}</td><td>${p.team_name.toUpperCase()}</td></tr>`));
+            globalPlayers.filter(p => p.roja).forEach((p, i) => tbodyReds.insertAdjacentHTML('beforeend', `<tr><td>${i + 1}</td><td>${p.name.toUpperCase()}</td><td>${p.team_name.toUpperCase()}</td></tr>`));
+
+            reportContainer.style.display = 'block';
+            const opt = { margin: 0, filename: 'Reporte_Publico_Torneo.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+            html2pdf().set(opt).from(element).save().then(() => { reportContainer.style.display = 'none'; }).catch(err => { console.error(err); reportContainer.style.display = 'none'; });
+        }
+
+        // Initial load
+        loadPublicData();
+        // Auto refresh every 30 seconds for live feel
+        setInterval(loadPublicData, 30000);
+    </script>
+</body>
+
+</html>

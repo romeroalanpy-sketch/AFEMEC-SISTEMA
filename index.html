@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SISTEMA DE TORNEOS AFEMEC</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap');
+
+        :root {
+            --primary: #8B0000;
+            --primary-dark: #660000;
+            --accent: #e67e22;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 90%;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        header {
+            margin-bottom: 50px;
+        }
+
+        .logo-text {
+            font-size: 5rem;
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: -2px;
+            background: linear-gradient(to bottom, #fff 30%, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text span {
+            color: var(--primary);
+            -webkit-text-fill-color: var(--primary);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-top: -10px;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+
+        .category-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-decoration: none;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .category-card:hover {
+            transform: translateY(-15px);
+            background: rgba(139, 0, 0, 0.15);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .category-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: var(--primary);
+            transition: height 0.3s ease;
+        }
+
+        .category-card:hover::before {
+            height: 10px;
+        }
+
+        .cat-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .cat-name {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+        }
+
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: transform 0.2s;
+            display: block;
+        }
+
+        .btn-admin {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-admin:hover {
+            background: var(--primary-dark);
+            transform: scale(1.02);
+        }
+
+        .btn-public {
+            background: transparent;
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-public:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+            transform: scale(1.02);
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 40px;
+            color: #475569;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            .logo-text {
+                font-size: 3.5rem;
+            }
+
+            .categories-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1 class="logo-text">A<span>femec</span></h1>
+            <p class="subtitle">Gestión de Torneos v2.0</p>
+        </header>
+
+        <div class="categories-grid">
+            <!-- SENIOR -->
+            <div class="category-card">
+                <div>
+                    <div class="cat-icon">🏆</div>
+                    <div class="cat-name">Categoría<br>Senior</div>
+                </div>
+                <div class="actions">
+                    <a href="javascript:void(0)" onclick="checkAdminAccess('/senior/praprueba.html.HTML')"
+                        class="btn btn-admin">⚙️ ADMINISTRAR</a>
+                    <a href="/senior/publico.html" class="btn btn-public">🌐 VER RESULTADOS</a>
+                </div>
+            </div>
+
+            <!-- MASTER -->
+            <div class="category-card">
+                <div>
+                    <div class="cat-icon">🥇</div>
+                    <div class="cat-name">Categoría<br>Master</div>
+                </div>
+                <div class="actions">
+                    <a href="javascript:void(0)" onclick="checkAdminAccess('/master/praprueba.html.HTML')"
+                        class="btn btn-admin">⚙️ ADMINISTRAR</a>
+                    <a href="/master/publico.html" class="btn btn-public">🌐 VER RESULTADOS</a>
+                </div>
+            </div>
+
+            <!-- EJECUTIVO -->
+            <div class="category-card">
+                <div>
+                    <div class="cat-icon">🎖️</div>
+                    <div class="cat-name">Categoría<br>Ejecutivo</div>
+                </div>
+                <div class="actions">
+                    <a href="javascript:void(0)" onclick="checkAdminAccess('/ejecutivo/praprueba.html.HTML')"
+                        class="btn btn-admin">⚙️ ADMINISTRAR</a>
+                    <a href="/ejecutivo/publico.html" class="btn btn-public">🌐 VER RESULTADOS</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Sistema Automatizado de Torneos AFEMEC &copy; 2025 - Desarrollo Profesional
+    </footer>
+
+    <script>
+        // Función para ocultar botones de administración si se accede con ?mode=public
+        function applyViewMode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isPublic = urlParams.get('mode') === 'public';
+
+            if (isPublic) {
+                // Ocultar todos los botones de administración
+                document.querySelectorAll('.btn-admin').forEach(btn => {
+                    btn.style.display = 'none';
+                });
+                // Hacer los botones de resultados más prominentes
+                document.querySelectorAll('.btn-public').forEach(btn => {
+                    btn.style.width = '100%';
+                    btn.style.padding = '20px';
+                    btn.style.fontSize = '1.2rem';
+                    btn.style.background = 'var(--primary)';
+                    btn.style.borderColor = 'var(--primary)';
+                });
+                // Cambiar el subtítulo
+                document.querySelector('.subtitle').textContent = "Página Oficial de Resultados";
+            }
+        }
+
+        function checkAdminAccess(url) {
+            // Si estamos en localhost, permitir acceso directo
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                sessionStorage.setItem('admin_access', 'true');
+                window.location.href = url;
+                return;
+            }
+
+            const password = prompt("Ingrese la contraseña de administrador:");
+            if (password === "afemec123") {
+                sessionStorage.setItem('admin_access', 'true');
+                window.location.href = url;
+            } else if (password !== null) {
+                alert("Contraseña incorrecta. Acceso denegado.");
+            }
+        }
+
+        // Ejecutar al cargar
+        window.addEventListener('load', applyViewMode);
+    </script>
+</body>
+
+</html>
