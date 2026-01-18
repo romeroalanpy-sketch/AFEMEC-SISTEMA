@@ -460,7 +460,7 @@
     </div>
 
     <script>
-        const API_URL = '/api';
+        const API_URL = 'api';
         let globalTeams = [];
         let globalMatches = [];
         let globalPlayers = [];
@@ -469,23 +469,16 @@
 
         async function loadPublicData() {
             try {
-                // Obtener categoría de la URL (ej: ?cat=senior)
-                const urlParams = new URLSearchParams(window.location.search);
-                const category = urlParams.get('cat') || ''; // Si está vacío, usa la API de raíz
-                const apiPrefix = category ? `/${category}/api` : '/api';
-
-                console.log("Cargando datos de:", category || 'Raíz');
-
                 // 1. Settings
-                const resSettings = await fetch(`${apiPrefix}/settings`);
+                const resSettings = await fetch(`${API_URL}/settings`);
                 const settings = await resSettings.json();
                 document.getElementById('leagueName').textContent = settings.league_name.toUpperCase();
 
                 // 2. Load Teams, Matches, Players
                 const [resTeams, resMatches, resPlayers] = await Promise.all([
-                    fetch(`${apiPrefix}/teams`),
-                    fetch(`${apiPrefix}/matches`),
-                    fetch(`${apiPrefix}/players/all`)
+                    fetch(`${API_URL}/teams`),
+                    fetch(`${API_URL}/matches`),
+                    fetch(`${API_URL}/players/all`)
                 ]);
 
                 globalTeams = await resTeams.json();
@@ -503,8 +496,6 @@
 
             } catch (err) {
                 console.error("Error loading data:", err);
-                // Mostrar mensaje de error amigable en la UI
-                document.getElementById('leagueName').textContent = "Error al cargar datos";
             }
         }
 

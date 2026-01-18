@@ -2,7 +2,7 @@
 // --- CONFIGURACIÓN DE LA API ---
 // URL base para conectar con el servidor backend (Node.js)
 // Usamos una ruta relativa para que funcione tanto en localhost como desde otros dispositivos en la red
-const API_URL = '/api';
+const API_URL = 'api';
 
 // --- ESTADO GLOBAL ---
 // Variables para almacenar los datos cargados desde la base de datos

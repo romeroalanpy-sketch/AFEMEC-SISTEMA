@@ -17,6 +17,6 @@ echo    - Si la cierras, la pagina dejara de guardar datos.
 echo.
 echo =====================================================================
 
-start "" "http://localhost:3000/praprueba.html.HTML"
+start "" "http://localhost:3002/praprueba.html.HTML"
 node server.js
 pause

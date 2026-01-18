@@ -12,6 +12,18 @@
 
   <!-- Enlace a nuestro archivo de Estilos CSS -->
   <link rel="stylesheet" href="styles.css">
+  <script>
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!isLocal && sessionStorage.getItem('admin_access') !== 'true') {
+      const pass = prompt("Acceso restringido. Ingrese la contraseña de administrador:");
+      if (pass === 'afemec123') {
+        sessionStorage.setItem('admin_access', 'true');
+      } else {
+        alert("Contraseña incorrecta.");
+        window.location.href = "/";
+      }
+    }
+  </script>
 </head>
 
 <body>
